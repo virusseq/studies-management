@@ -1,0 +1,73 @@
+version: '3.7'
+services:
+  ego-api:
+    image: 'overture/ego:3.4.0'
+    environment:
+      SERVER_PORT: 8080
+      SPRING_DATASOURCE_URL: jdbc:postgresql://ego-postgres:5432/ego?stringtype=unspecified
+      SPRING_DATASOURCE_USERNAME: postgres
+      SPRING_DATASOURCE_PASSWORD: password
+      SPRING_FLYWAY_ENABLED: 'true'
+      SPRING_FLYWAY_LOCATIONS: 'classpath:flyway/sql,classpath:db/migration'
+      SPRING_PROFILES: demo, auth
+      JWT_DURATIONMS: 2147483647 # expire tokens in 24.855 days (max-int ms) for local testing
+    expose:
+      - '8080'
+    ports:
+      - '8081:8080'
+    depends_on:
+      - ego-postgres
+  ego-postgres:
+    image: postgres:11.1
+    environment:
+      - POSTGRES_DB=ego
+      - POSTGRES_PASSWORD=password
+    expose:
+      - '5432'
+    volumes:
+      - './ego-init:/docker-entrypoint-initdb.d'
+    ports:
+      - '9444:5432'
+
+  song-db:
+    image: postgres:11.1
+    environment:
+      POSTGRES_DB: song
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: password
+    ports:
+      - '8432:5432'
+    volumes:
+      - './song-db-init:/docker-entrypoint-initdb.d'
+  song-server:
+    network_mode: 'host'
+    image: overture/song-server:4.5.0
+    environment:
+      SERVER_PORT: 8089
+      SPRING_PROFILES_ACTIVE: 'prod,secure,default,jwt,score-client-cred'
+      AUTH_JWT_PUBLICKEYURL: http://localhost:8081/oauth/token/public_key
+      AUTH_SERVER_URL: http://localhost:8081/o/check_api_key/
+      AUTH_SERVER_CLIENTID: song
+      AUTH_SERVER_TOKENNAME: apiKey
+      AUTH_SERVER_CLIENTSECRET: songsecret
+      AUTH_SERVER_SCOPE_STUDY_PREFIX: song.
+      AUTH_SERVER_SCOPE_STUDY_SUFFIX: .WRITE
+      AUTH_SERVER_SCOPE_SYSTEM: song.WRITE
+      SCORE_URL: http://localhost:8087
+      SCORE_CLIENTCREDENTIALS_ID: adminId
+      SCORE_CLIENTCREDENTIALS_SECRET: adminSecret
+      SCORE_CLIENTCREDENTIALS_TOKENURL: http://localhost:8081/oauth/token
+      SCORE_CLIENTCREDENTIALS_SYSTEMSCOPE: 'score.WRITE'
+      MANAGEMENT_SERVER_PORT: 8088
+      SPRING_DATASOURCE_USERNAME: postgres
+      SPRING_DATASOURCE_PASSWORD: password
+      SPRING_DATASOURCE_URL: jdbc:postgresql://localhost:8432/song?stringtype=unspecified
+      SPRING_FLYWAY_ENABLED: 'true'
+      SPRING_FLYWAY_LOCATIONS: 'classpath:db/migration'
+    ports:
+      - '5006:5006'
+      - '8089:8089'
+    depends_on:
+      - song-db
+      - ego-api
+      - ego-postgres
