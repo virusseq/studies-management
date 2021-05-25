@@ -1,4 +1,3 @@
-import { AccessToken, ClientCredentials } from 'simple-oauth2';
 import urljoin from 'url-join';
 import { EGO_URL, EGO_OAUTH_ENDPOINT, OAUTH_CLIENT_ID, OAUTH_CLIENT_SECRET } from './config';
 import fetch from 'node-fetch';
@@ -36,7 +35,8 @@ async function getJwt() {
 }
 
 async function getAuthHeader() {
-  return { Authorization: await getJwt() };
+  const jwt = await getJwt();
+  return { Authorization: `Bearer ${jwt}` };
 }
 
 async function get<T>(url: string): Promise<T> {
@@ -50,13 +50,13 @@ async function getWithAuth<T>(url: string): Promise<T> {
 
 async function postWithAuth<T>(
   url: string,
-  body: object
+  body: object | undefined = undefined
 ): Promise<{ statusCode: number; data: T }> {
   const authHeaders = await getAuthHeader();
   return await fetch(url, {
     method: 'POST',
     headers: { ...authHeaders, Accept: 'application/json', 'Content-Type': 'application/json' },
-    body: JSON.stringify(body),
+    body: body ? JSON.stringify(body) : undefined,
   }).then(async (res) => {
     return { statusCode: res.status, data: await res.json() };
   });

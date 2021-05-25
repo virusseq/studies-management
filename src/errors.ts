@@ -34,7 +34,7 @@ export function FailedToCreateStudyInSong(studyId: string): ServiceError {
 }
 
 export function FailedToCreateStudyInEgo(studyId: string): ServiceError {
-  const message: string = `Failed to create group for study [${studyId}] in auth service!`;
+  const message: string = `Failed to create group and/or policy for study [${studyId}] in auth service!`;
 
   return new ServiceError(500, message);
 }

@@ -33,6 +33,11 @@ function studyIdToEgoGroup(studyId: string) {
   return 'STUDY-' + studyId;
 }
 
+function studyIdToEgoPolicy(studyId: string) {
+  // TODO make configurable!
+  return 'STUDY-' + studyId;
+}
+
 const SONG_STUDIES_URL = urljoin(SONG_URL, '/studies/all');
 const EGO_GROUPS_URL = urljoin(EGO_URL, '/groups');
 
@@ -45,10 +50,11 @@ export const getStudies = async (): Promise<Study[]> => {
     studyDetails.push(studyDetail);
   }
 
-  // get all groups from ego, and filter groups mapping to each studyId
+  // get all valid study groups from ego, and filter groups mapping to each studyId
   const studyGroups: StudyEgoGroup[] = (
     await getWithAuth<EgoGetGroupsResponse>(EGO_GROUPS_URL).then(({ resultSet }) => resultSet)
   )
+    .filter((g) => g.name.startsWith('STUDY-'))
     .map((g) => {
       return {
         name: g.name,
@@ -58,6 +64,8 @@ export const getStudies = async (): Promise<Study[]> => {
       };
     })
     .filter((g) => studyIds.includes(egoGroupToStudyId(g.studyId)));
+
+  console.log();
 
   // for each group get users from ego
   const studyUsers: Record<string, string[]> = {};
@@ -69,15 +77,20 @@ export const getStudies = async (): Promise<Study[]> => {
     studyUsers[studyId] = users.map((u) => u.email);
   }
 
-  return studyDetails.map((sd: SongStudy) => {
-    return {
-      studyId: sd.studyId,
-      studyName: sd.name,
-      description: sd.description,
-      organization: sd.organization,
-      emailAddresses: studyUsers[sd.studyId],
-    };
-  });
+  return (
+    studyDetails
+      // studyUsers can be empty array but not undefined
+      .filter((sd) => studyUsers[sd.studyId] !== undefined)
+      .map((sd: SongStudy) => {
+        return {
+          studyId: sd.studyId,
+          studyName: sd.name,
+          description: sd.description,
+          organization: sd.organization,
+          emailAddresses: studyUsers[sd.studyId],
+        };
+      })
+  );
 };
 
 async function getEgoUser(email: string): Promise<StudyEgoUser | undefined> {
@@ -93,13 +106,14 @@ async function getEgoGroup(groupName: string): Promise<StudyEgoUser | undefined>
 export const createStudy = async (req: CreateStudyReq): Promise<Study | undefined> => {
   // TODO check study doesn't already exist!
 
+  // create study in song
   const songCreateStudyReq = {
     description: req.description,
     name: req.studyName,
     organization: req.organization,
     studyId: req.studyId,
   };
-  const songCreateStudyRes = await postWithAuth<any>(
+  const songCreateStudyRes = await postWithAuth(
     urljoin(SONG_URL, '/studies/', req.studyId, '/'),
     songCreateStudyReq
   );
@@ -107,13 +121,39 @@ export const createStudy = async (req: CreateStudyReq): Promise<Study | undefine
     throw FailedToCreateStudyInSong(req.studyId);
   }
 
+  // create study group in ego
   const egoCreateGroupRequest = {
     description: req.description,
     name: studyIdToEgoGroup(req.studyId),
     status: 'APPROVED',
   };
-  const egoCreateGroupRes = await postWithAuth(urljoin(EGO_URL, '/groups'), egoCreateGroupRequest);
+  const egoCreateGroupRes = await postWithAuth<any>(
+    urljoin(EGO_URL, '/groups'),
+    egoCreateGroupRequest
+  );
   if (egoCreateGroupRes.statusCode !== 200) {
+    throw FailedToCreateStudyInEgo(req.studyId);
+  }
+
+  // create policy in ego
+  const egoCreatePolicyRequest = {
+    name: studyIdToEgoPolicy(req.studyId),
+  };
+  const egoCreatePolicyRes = await postWithAuth<any>(
+    urljoin(EGO_URL, '/policies'),
+    egoCreatePolicyRequest
+  );
+  if (egoCreatePolicyRes.statusCode !== 200) {
+    throw FailedToCreateStudyInEgo(req.studyId);
+  }
+
+  // add new policy to group in ego
+  const groupId = egoCreateGroupRes.data.id;
+  const policyId = egoCreatePolicyRes.data.id;
+  const egoUpdateGroupPermissionRes = await postWithAuth(
+    urljoin(EGO_URL, `/policies/${policyId}/permission/group/${groupId}`)
+  );
+  if (egoUpdateGroupPermissionRes.statusCode !== 200) {
     throw FailedToCreateStudyInEgo(req.studyId);
   }
 
