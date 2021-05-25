@@ -12,6 +12,14 @@ import {
   StudyEgoUser,
 } from './types';
 import fetch from 'node-fetch';
+import {
+  FailedToRemoveSubmitterFromStudy,
+  FailedToCreateStudyInEgo,
+  FailedToCreateStudyInSong,
+  StudyNotFound,
+  SubmitterNotFound,
+  FailedToAddSubmittersToStudy,
+} from './errors';
 
 function egoGroupToStudyId(egoGroupName: string) {
   // TODO make configurable!
@@ -37,12 +45,17 @@ async function getWithAuth<T>(url: string): Promise<T> {
   return await fetch(url, { method: 'GET', headers: authHeader }).then((res) => res.json());
 }
 
-async function postWithAuth<T>(url: string, body: object): Promise<T> {
+async function postWithAuth<T>(
+  url: string,
+  body: object
+): Promise<{ statusCode: number; data: T }> {
   return await fetch(url, {
     method: 'POST',
     headers: { ...authHeader, Accept: 'application/json', 'Content-Type': 'application/json' },
     body: JSON.stringify(body),
-  }).then((res) => res.json());
+  }).then(async (res) => {
+    return { statusCode: res.status, data: await res.json() };
+  });
 }
 
 async function deleteWithAuth(url: string) {
@@ -95,17 +108,17 @@ export const getStudies = async (): Promise<Study[]> => {
 
 async function getEgoUser(email: string): Promise<StudyEgoUser | undefined> {
   const url = urljoin(EGO_URL, `/users?query=${email}`);
-  console.log(url);
   return getWithAuth<EgoGetGroupUsersResponse>(url).then(({ resultSet }) => resultSet[0]);
 }
 
 async function getEgoGroup(groupName: string): Promise<StudyEgoUser | undefined> {
   const url = urljoin(EGO_URL, `/groups?query=${groupName}`);
-  console.log(url);
   return getWithAuth<EgoGetGroupUsersResponse>(url).then(({ resultSet }) => resultSet[0]);
 }
 
 export const createStudy = async (req: CreateStudyReq): Promise<Study | undefined> => {
+  // TODO check study doesn't already exist!
+
   const songCreateStudyReq = {
     description: req.description,
     name: req.studyName,
@@ -116,71 +129,80 @@ export const createStudy = async (req: CreateStudyReq): Promise<Study | undefine
     urljoin(SONG_URL, '/studies/', req.studyId, '/'),
     songCreateStudyReq
   );
-  console.log(songCreateStudyRes);
+  if (songCreateStudyRes.statusCode !== 200) {
+    throw FailedToCreateStudyInSong(req.studyId);
+  }
 
   const egoCreateGroupRequest = {
     description: req.description,
     name: studyIdToEgoGroup(req.studyId),
     status: 'APPROVED',
   };
-  const egoCreateGroupRes = await postWithAuth<any>(
-    urljoin(EGO_URL, '/groups'),
-    egoCreateGroupRequest
-  );
-  console.log(egoCreateGroupRes);
-
-  if (songCreateStudyRes.message !== undefined && egoCreateGroupRes.status === 'APPROVED') {
-    return {
-      ...req,
-      emailAddresses: [],
-    };
+  const egoCreateGroupRes = await postWithAuth(urljoin(EGO_URL, '/groups'), egoCreateGroupRequest);
+  if (egoCreateGroupRes.statusCode !== 200) {
+    throw FailedToCreateStudyInEgo(req.studyId);
   }
-  console.log('Failed to create somewhere');
+
+  return {
+    ...req,
+    emailAddresses: [],
+  };
 };
 
 export const addSubmittersToStudy = async (req: AddSubmittersReq) => {
-  const userIds = [];
-  for (const email of req.emailAddresses) {
-    const egoUser = await getEgoUser(email);
-    userIds.push(egoUser?.id);
-  }
-
-  console.log(userIds);
+  // TODO check user isn't already in study!
 
   const egoGroupName = studyIdToEgoGroup(req.studyId);
   const egoGroup = await getEgoGroup(egoGroupName);
-  console.log(egoGroup);
-
   if (!egoGroup) {
-    return undefined;
+    throw StudyNotFound([req.studyId]);
   }
 
-  const egoAddUsersToGroupRes = await postWithAuth<any>(
+  const userIds = [];
+  const missingUsers = [];
+  for (const email of req.emailAddresses) {
+    const egoUser = await getEgoUser(email);
+    if (!egoUser) {
+      missingUsers.push(email);
+    } else {
+      userIds.push(egoUser?.id);
+    }
+  }
+  if (missingUsers.length > 0) {
+    throw SubmitterNotFound(missingUsers);
+  }
+
+  const egoAddUsersToGroupRes = await postWithAuth(
     urljoin(EGO_URL, '/groups/', egoGroup.id, '/users'),
     userIds
   );
-  console.log(egoAddUsersToGroupRes);
+  if (egoAddUsersToGroupRes.statusCode !== 200) {
+    throw FailedToAddSubmittersToStudy(req.studyId, req.emailAddresses);
+  }
 
   return req;
 };
 
 export const removeSubmitterFromStudy = async (req: RemoveSubmitterReq) => {
+  // TODO check user isn't already not in study!
+
   const egoUser = await getEgoUser(req.email);
-  console.log(egoUser);
+  if (!egoUser) {
+    throw SubmitterNotFound([req.email]);
+  }
 
   const egoGroupName = studyIdToEgoGroup(req.studyId);
   const egoGroup = await getEgoGroup(egoGroupName);
-  console.log(egoGroup);
-
-  if (!egoGroup || !egoUser) {
-    return undefined;
+  if (!egoGroup) {
+    throw StudyNotFound([req.studyId]);
   }
 
   const egoRemoveUsersFromGroupRes = await deleteWithAuth(
     urljoin(EGO_URL, '/groups/', egoGroup.id, '/users/', egoUser?.id)
   );
-  console.log('RES:');
-  console.log(egoRemoveUsersFromGroupRes);
+  if (egoRemoveUsersFromGroupRes.status !== 200) {
+    throw FailedToRemoveSubmitterFromStudy(req.studyId, req.email);
+  }
 
   return req;
 };

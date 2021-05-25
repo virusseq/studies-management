@@ -1,4 +1,4 @@
-import { Request, Response } from 'express';
+import { NextFunction, Request, Response } from 'express';
 import { addSubmittersToStudy, createStudy, getStudies, removeSubmitterFromStudy } from './service';
 
 const express = require('express');
@@ -12,26 +12,44 @@ app.get('/health', (_req: Request, res: Response) => {
   res.send(true);
 });
 
-app.get('/studies', async (_req: Request, res: Response) => {
-  res.json(await getStudies());
+app.get('/studies', (_req: Request, res: Response, next: NextFunction) => {
+  getStudies()
+    .then((studies) => res.json(studies))
+    .catch(next);
 });
 
-app.post('/study', async (req: Request, res: Response) => {
-  const study = await createStudy(req.body);
-  console.log(study);
-  res.json({ message: 'Study successfully created!', study: study });
+app.post('/study', (req: Request, res: Response, next: NextFunction) => {
+  createStudy(req.body)
+    .then((study) =>
+      res.json({ success: true, message: 'Study successfully created!', study: study })
+    )
+    .catch(next);
 });
 
-app.post('/users', async (req: Request, res: Response) => {
-  const result = await addSubmittersToStudy(req.body);
-  console.log(result);
-  res.json({ message: 'User successfully added!', data: result });
+app.post('/users', async (req: Request, res: Response, next: NextFunction) => {
+  await addSubmittersToStudy(req.body)
+    .then((result) =>
+      res.json({ success: true, message: 'User successfully added!', data: result })
+    )
+    .catch(next);
 });
 
-app.delete('/users', async (req: Request, res: Response) => {
-  const result = await removeSubmitterFromStudy(req.body);
-  console.log(result);
-  res.json({ message: 'User successfully removed!', data: result });
+app.delete('/users', (req: Request, res: Response, next: NextFunction) => {
+  removeSubmitterFromStudy(req.body)
+    .then((result) =>
+      res.json({ success: true, message: 'User successfully removed!', data: result })
+    )
+    .catch(next);
+});
+
+app.use(function (err: any, req: Request, res: Response, next: NextFunction) {
+  const { statusCode, message, stack, isServiceError } = err;
+  console.error(stack);
+  if (isServiceError) {
+    res.status(statusCode).json({ message, success: false });
+  } else {
+    res.status(500).send('Internal Server Error');
+  }
 });
 
 app.listen(3001);
