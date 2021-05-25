@@ -11,7 +11,6 @@ import {
   StudyEgoGroup,
   StudyEgoUser,
 } from './types';
-import fetch from 'node-fetch';
 import {
   FailedToRemoveSubmitterFromStudy,
   FailedToCreateStudyInEgo,
@@ -20,6 +19,9 @@ import {
   SubmitterNotFound,
   FailedToAddSubmittersToStudy,
 } from './errors';
+import oauthClient from './oauthClient';
+
+const { get, getWithAuth, postWithAuth, deleteWithAuth } = oauthClient;
 
 function egoGroupToStudyId(egoGroupName: string) {
   // TODO make configurable!
@@ -31,36 +33,8 @@ function studyIdToEgoGroup(studyId: string) {
   return 'STUDY-' + studyId;
 }
 
-const JWT = 'Bearer TODO';
-const authHeader = { Authorization: JWT };
-
 const SONG_STUDIES_URL = urljoin(SONG_URL, '/studies/all');
 const EGO_GROUPS_URL = urljoin(EGO_URL, '/groups');
-
-async function get<T>(url: string): Promise<T> {
-  return await fetch(url).then((res) => res.json());
-}
-
-async function getWithAuth<T>(url: string): Promise<T> {
-  return await fetch(url, { method: 'GET', headers: authHeader }).then((res) => res.json());
-}
-
-async function postWithAuth<T>(
-  url: string,
-  body: object
-): Promise<{ statusCode: number; data: T }> {
-  return await fetch(url, {
-    method: 'POST',
-    headers: { ...authHeader, Accept: 'application/json', 'Content-Type': 'application/json' },
-    body: JSON.stringify(body),
-  }).then(async (res) => {
-    return { statusCode: res.status, data: await res.json() };
-  });
-}
-
-async function deleteWithAuth(url: string) {
-  return await fetch(url, { method: 'DELETE', headers: authHeader });
-}
 
 export const getStudies = async (): Promise<Study[]> => {
   // get all studyIds and studyDetails from song

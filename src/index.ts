@@ -1,3 +1,5 @@
+require('dotenv').config();
+
 import { NextFunction, Request, Response } from 'express';
 import { addSubmittersToStudy, createStudy, getStudies, removeSubmitterFromStudy } from './service';
 
