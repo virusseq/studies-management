@@ -7,6 +7,7 @@ import {
   getStudies,
   removeSubmitterFromStudy,
 } from './services/studies';
+import authFilter from './components/authFilter';
 
 const express = require('express');
 const cors = require('cors');
@@ -19,13 +20,13 @@ app.get('/health', (_req: Request, res: Response) => {
   res.send(true);
 });
 
-app.get('/studies', (_req: Request, res: Response, next: NextFunction) => {
+app.get('/studies', authFilter, (_req: Request, res: Response, next: NextFunction) => {
   getStudies()
     .then((studies) => res.json(studies))
     .catch(next);
 });
 
-app.post('/study', (req: Request, res: Response, next: NextFunction) => {
+app.post('/study', authFilter, (req: Request, res: Response, next: NextFunction) => {
   createStudy(req.body)
     .then((study) =>
       res.json({ success: true, message: 'Study successfully created!', study: study })
@@ -33,7 +34,7 @@ app.post('/study', (req: Request, res: Response, next: NextFunction) => {
     .catch(next);
 });
 
-app.post('/users', async (req: Request, res: Response, next: NextFunction) => {
+app.post('/users', authFilter, async (req: Request, res: Response, next: NextFunction) => {
   await addSubmittersToStudy(req.body)
     .then((result) =>
       res.json({ success: true, message: 'User successfully added!', data: result })
@@ -41,7 +42,7 @@ app.post('/users', async (req: Request, res: Response, next: NextFunction) => {
     .catch(next);
 });
 
-app.delete('/users', (req: Request, res: Response, next: NextFunction) => {
+app.delete('/users', authFilter, (req: Request, res: Response, next: NextFunction) => {
   removeSubmitterFromStudy(req.body)
     .then((result) =>
       res.json({ success: true, message: 'User successfully removed!', data: result })

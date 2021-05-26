@@ -6,6 +6,8 @@ export const OAUTH_CLIENT_ID = process.env.OAUTH_CLIENT_ID || 'id';
 export const OAUTH_CLIENT_SECRET = process.env.OAUTH_CLIENT_SECRET || 'secret';
 export const EGO_STUDY_PREFIX = process.env.EGO_STUDY_PREFIX || 'STUDY-';
 
+export const SCOPES_WRITE = process.env.SCOPES_WRITE || 'COLLABORATOR.WRITE';
+
 // ** constants **
 export const EGO_OAUTH_ENDPOINT = '/oauth/token';
 export const EGO_PUBLIC_KEY_ENDPOINT = '/oauth/token/public_key';
