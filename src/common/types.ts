@@ -6,17 +6,10 @@ export type Study = {
   emailAddresses: string[];
 };
 
-export type StudyEgoGroup = {
+export type EgoStudyGroup = {
   name: string;
   studyId: string;
   id: string;
-  status: string;
-};
-
-export type StudyEgoUser = {
-  id: string;
-  name: string;
-  email: string;
   status: string;
 };
 
@@ -25,6 +18,13 @@ export type SongStudy = {
   studyId: string;
   organization: string;
   description: string;
+};
+
+export type EgoUser = {
+  id: string;
+  name: string;
+  email: string;
+  status: string;
 };
 
 export type EgoGroup = {
@@ -36,7 +36,7 @@ export type EgoGroup = {
 
 export type EgoGetGroupsResponse = EgoGetResponse<EgoGroup>;
 
-export type EgoGetGroupUsersResponse = EgoGetResponse<StudyEgoUser>;
+export type EgoGetGroupUsersResponse = EgoGetResponse<EgoUser>;
 
 export type EgoGetResponse<T> = {
   resultSet: T[];

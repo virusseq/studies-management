@@ -1,5 +1,5 @@
 import urljoin from 'url-join';
-import { EGO_URL, EGO_OAUTH_ENDPOINT, OAUTH_CLIENT_ID, OAUTH_CLIENT_SECRET } from './config';
+import { EGO_URL, EGO_OAUTH_ENDPOINT, OAUTH_CLIENT_ID, OAUTH_CLIENT_SECRET } from '../config';
 import fetch from 'node-fetch';
 
 type EgoTokenObj = {
@@ -39,26 +39,26 @@ async function getAuthHeader() {
   return { Authorization: `Bearer ${jwt}` };
 }
 
-async function get<T>(url: string): Promise<T> {
+async function get<ExpectedDataType>(url: string): Promise<ExpectedDataType> {
   return await fetch(url).then((res) => res.json());
 }
 
-async function getWithAuth<T>(url: string): Promise<T> {
+async function getWithAuth<ExpectedDataType>(url: string): Promise<ExpectedDataType> {
   const headers = await getAuthHeader();
   return await fetch(url, { method: 'GET', headers }).then((res) => res.json());
 }
 
-async function postWithAuth<T>(
+async function postWithAuth<ExpectedDataType>(
   url: string,
   body: object | undefined = undefined
-): Promise<{ statusCode: number; data: T }> {
+): Promise<{ status: number; data: ExpectedDataType }> {
   const authHeaders = await getAuthHeader();
   return await fetch(url, {
     method: 'POST',
     headers: { ...authHeaders, Accept: 'application/json', 'Content-Type': 'application/json' },
     body: body ? JSON.stringify(body) : undefined,
   }).then(async (res) => {
-    return { statusCode: res.status, data: await res.json() };
+    return { status: res.status, data: await res.json() };
   });
 }
 

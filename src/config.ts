@@ -4,6 +4,7 @@ export const EGO_URL = process.env.EGO_URL || 'http://localhost:808';
 
 export const OAUTH_CLIENT_ID = process.env.OAUTH_CLIENT_ID || 'id';
 export const OAUTH_CLIENT_SECRET = process.env.OAUTH_CLIENT_SECRET || 'secret';
+export const EGO_STUDY_PREFIX = process.env.EGO_STUDY_PREFIX || 'STUDY-';
 
 // ** constants **
 export const EGO_OAUTH_ENDPOINT = '/oauth/token';

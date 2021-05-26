@@ -1,7 +1,12 @@
 require('dotenv').config();
 
 import { NextFunction, Request, Response } from 'express';
-import { addSubmittersToStudy, createStudy, getStudies, removeSubmitterFromStudy } from './service';
+import {
+  addSubmittersToStudy,
+  createStudy,
+  getStudies,
+  removeSubmitterFromStudy,
+} from './services/studies';
 
 const express = require('express');
 const cors = require('cors');
