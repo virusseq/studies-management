@@ -1,34 +1,28 @@
+// dotenv should be first line executed
 require('dotenv').config();
 
-import { NextFunction, Request, Response } from 'express';
-import { ServiceError } from './common/errors';
-import studiesRouter from './routes/studies';
-import express from 'express';
 import { ForbiddenError, UnauthorizedError } from '@overture-stack/ego-token-middleware';
+import cors from 'cors';
+import express, { NextFunction, Request, Response } from 'express';
+import swaggerUi from 'swagger-ui-express';
+import { ServiceError } from './common/errors';
 import { SERVER_PORT } from './config';
+import swaggerDocument from './resources/swagger-def.json';
+import studiesRouter from './routes/studies';
 
-const swaggerUi = require('swagger-ui-express');
-const swaggerDocument = require('./resources/swagger-def.json');
-
-const cors = require('cors');
-
+// *** create and init app ***
 const app = express();
-
 app.use(cors());
 app.use(express.json());
 
-// health endpoint
+// *** setup endpoints ***
 app.get('/health', (_req: Request, res: Response) => {
   res.send(true);
 });
-
-// studies endpoint
 app.use('/studies', studiesRouter);
-
-// swagger docs
 app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerDocument));
 
-// express error handler
+// *** define error handler ***
 app.use(function (
   err: ServiceError | UnauthorizedError | ForbiddenError | Error,
   _req: Request,
@@ -63,4 +57,5 @@ app.use(function (
   }
 });
 
+// *** listen on port ***
 app.listen(SERVER_PORT, () => console.log(`App should be running at ${SERVER_PORT}!`));
