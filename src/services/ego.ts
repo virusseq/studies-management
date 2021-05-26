@@ -110,9 +110,14 @@ export const createEgoStudyPolicy = async (studyId: string) => {
   }
 };
 
-export const addGroupToPolicy = async (groupId: string, policyId: string) => {
+export const addGroupToPolicyWithWriteMask = async (groupId: string, policyId: string) => {
+  const mask = {
+    mask: 'WRITE',
+  };
   const egoUpdateGroupPermissionRes = await postWithAuth(
-    urljoin(EGO_URL, `/policies/${policyId}/permission/group/${groupId}`)
+    urljoin(EGO_URL, `/policies/${policyId}/permission/group/${groupId}`),
+    mask
   );
-  return egoUpdateGroupPermissionRes.status !== 200;
+  console.log(egoUpdateGroupPermissionRes);
+  return egoUpdateGroupPermissionRes.status === 200;
 };

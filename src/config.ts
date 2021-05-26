@@ -1,4 +1,6 @@
 // ** evn **
+export const SERVER_PORT = process.env.SERVER_PORT ? Number(process.env.SERVER_PORT) : 3001;
+
 export const SONG_URL = process.env.SONG_URL || 'http://localhost:808';
 export const EGO_URL = process.env.EGO_URL || 'http://localhost:808';
 

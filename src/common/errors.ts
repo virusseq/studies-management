@@ -1,18 +1,16 @@
 export enum ErrorReasons {
-  STUDY_NOT_FOUND,
-  SUBMITTERS_NOT_FOUND,
-  FAILED_TO_CREATE_STUDY_IN_METADATA_SVC,
-  FAILED_TO_CREATE_STUDY_IN_AUTH_SVC,
-  FAILED_TO_REMOVE_SUBMITTERS_FROM_STUDY_GROUP,
-  FAILED_TO_ADD_SUBMITTERS_TO_STUDY_GROUP,
+  STUDY_NOT_FOUND = 'STUDY_NOT_FOUND',
+  SUBMITTERS_NOT_FOUND = 'STUDY_NOT_FOUND',
+  FAILED_TO_CREATE_STUDY_IN_METADATA_SVC = 'FAILED_TO_CREATE_STUDY_IN_METADATA_SVC',
+  FAILED_TO_CREATE_STUDY_IN_AUTH_SVC = 'FAILED_TO_CREATE_STUDY_IN_AUTH_SVC',
+  FAILED_TO_REMOVE_SUBMITTERS_FROM_STUDY_GROUP = 'FAILED_TO_REMOVE_SUBMITTERS_FROM_STUDY_GROUP',
+  FAILED_TO_ADD_SUBMITTERS_TO_STUDY_GROUP = 'FAILED_TO_ADD_SUBMITTERS_TO_STUDY_GROUP',
 }
 
-export const isServiceError = (obj: any): obj is ServiceError => {
-  return obj.errorType === 'ServiceError';
-};
-
 export class ServiceError extends Error {
-  errorType = 'ServiceError';
+  name = 'ServiceError';
+  message = 'Servie error occured!';
+
   status: number;
   reason: ErrorReasons;
   errorStudyId?: string;
@@ -49,7 +47,7 @@ export function SubmitterNotFound(errorSubmitters: string[]): ServiceError {
 
 export function FailedToCreateStudyInSong(errorStudyId: string): ServiceError {
   const errorProps = {
-    status: 500,
+    status: 400,
     reason: ErrorReasons.FAILED_TO_CREATE_STUDY_IN_METADATA_SVC,
     errorStudyId,
   };
@@ -58,7 +56,7 @@ export function FailedToCreateStudyInSong(errorStudyId: string): ServiceError {
 
 export function FailedToCreateStudyInEgo(errorStudyId: string): ServiceError {
   const errorProps = {
-    status: 500,
+    status: 400,
     reason: ErrorReasons.FAILED_TO_CREATE_STUDY_IN_AUTH_SVC,
     errorStudyId,
   };
@@ -70,7 +68,7 @@ export function FailedToRemoveSubmitterFromStudy(
   errorSubmitter: string
 ): ServiceError {
   const errorProps = {
-    status: 500,
+    status: 400,
     reason: ErrorReasons.FAILED_TO_REMOVE_SUBMITTERS_FROM_STUDY_GROUP,
     errorStudyId,
     errorSubmitters: [errorSubmitter],
@@ -83,7 +81,7 @@ export function FailedToAddSubmittersToStudy(
   errorSubmitters: string[]
 ): ServiceError {
   const errorProps = {
-    status: 500,
+    status: 400,
     reason: ErrorReasons.FAILED_TO_REMOVE_SUBMITTERS_FROM_STUDY_GROUP,
     errorStudyId,
     errorSubmitters,

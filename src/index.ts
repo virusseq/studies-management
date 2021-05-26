@@ -1,59 +1,42 @@
 require('dotenv').config();
 
 import { NextFunction, Request, Response } from 'express';
-import {
-  addSubmittersToStudy,
-  createStudy,
-  getStudies,
-  removeSubmitterFromStudy,
-} from './services/studies';
-import authFilter from './components/authFilter';
-import { isServiceError, ServiceError } from './common/errors';
+import { ServiceError } from './common/errors';
+import studiesRouter from './routes/studies';
+import express from 'express';
+import { ForbiddenError, UnauthorizedError } from '@overture-stack/ego-token-middleware';
+import { SERVER_PORT } from './config';
 
-const express = require('express');
+const swaggerUi = require('swagger-ui-express');
+const swaggerDocument = require('./resources/swagger-def.json');
+
 const cors = require('cors');
 
 const app = express();
+
 app.use(cors());
 app.use(express.json());
 
+// health endpoint
 app.get('/health', (_req: Request, res: Response) => {
   res.send(true);
 });
 
-app.get('/studies', authFilter, (_req: Request, res: Response, next: NextFunction) => {
-  getStudies()
-    .then((studies) => res.json(studies))
-    .catch(next);
-});
+// studies endpoint
+app.use('/studies', studiesRouter);
 
-app.post('/study', authFilter, (req: Request, res: Response, next: NextFunction) => {
-  createStudy(req.body)
-    .then((study) =>
-      res.json({ success: true, message: 'Study successfully created!', study: study })
-    )
-    .catch(next);
-});
+// swagger docs
+app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerDocument));
 
-app.post('/users', authFilter, async (req: Request, res: Response, next: NextFunction) => {
-  await addSubmittersToStudy(req.body)
-    .then((result) =>
-      res.json({ success: true, message: 'User successfully added!', data: result })
-    )
-    .catch(next);
-});
-
-app.delete('/users', authFilter, (req: Request, res: Response, next: NextFunction) => {
-  removeSubmitterFromStudy(req.body)
-    .then((result) =>
-      res.json({ success: true, message: 'User successfully removed!', data: result })
-    )
-    .catch(next);
-});
-
-app.use(function (err: ServiceError | Error, _req: Request, res: Response, _next: NextFunction) {
+// express error handler
+app.use(function (
+  err: ServiceError | UnauthorizedError | ForbiddenError | Error,
+  _req: Request,
+  res: Response,
+  _next: NextFunction
+) {
   console.error(err.stack);
-  if (isServiceError(err)) {
+  if (err instanceof ServiceError) {
     const { status, errorStudyId, errorSubmitters, reason } = err;
     res.status(status).json({
       success: false,
@@ -61,6 +44,16 @@ app.use(function (err: ServiceError | Error, _req: Request, res: Response, _next
       reason,
       errorStudyId,
       errorSubmitters,
+    });
+  } else if (err instanceof UnauthorizedError) {
+    res.status(401).send({
+      success: false,
+      message: err.message,
+    });
+  } else if (err instanceof ForbiddenError) {
+    res.status(403).send({
+      success: false,
+      message: err.message,
     });
   } else {
     res.status(500).send({
@@ -70,5 +63,4 @@ app.use(function (err: ServiceError | Error, _req: Request, res: Response, _next
   }
 });
 
-app.listen(3001);
-console.log('App should be running at 3001!');
+app.listen(SERVER_PORT, () => console.log(`App should be running at ${SERVER_PORT}!`));

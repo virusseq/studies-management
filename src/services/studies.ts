@@ -24,7 +24,7 @@ import {
   addUsersToGroup,
   createEgoStudyGroup,
   createEgoStudyPolicy,
-  addGroupToPolicy,
+  addGroupToPolicyWithWriteMask,
 } from './ego';
 
 export const getStudies = async (): Promise<Study[]> => {
@@ -39,10 +39,10 @@ export const getStudies = async (): Promise<Study[]> => {
       .map((sd: SongStudy) => {
         return {
           studyId: sd.studyId,
-          studyName: sd.name,
+          name: sd.name,
           description: sd.description,
           organization: sd.organization,
-          emailAddresses: studyUsers[sd.studyId],
+          submitters: studyUsers[sd.studyId],
         };
       })
   );
@@ -64,14 +64,14 @@ export const createStudy = async (req: CreateStudyReq): Promise<Study | undefine
     throw FailedToCreateStudyInEgo(req.studyId);
   }
 
-  const added = await addGroupToPolicy(groupId, policyId);
+  const added = await addGroupToPolicyWithWriteMask(groupId, policyId);
   if (!added) {
     throw FailedToCreateStudyInEgo(req.studyId);
   }
 
   return {
     ...req,
-    emailAddresses: [],
+    submitters: [],
   };
 };
 
@@ -83,7 +83,7 @@ export const addSubmittersToStudy = async (req: AddSubmittersReq) => {
 
   const userIds = [];
   const missingUsers = [];
-  for (const email of req.emailAddresses) {
+  for (const email of req.submitters) {
     const egoUser = await getEgoUser(email);
     if (!egoUser) {
       missingUsers.push(email);
@@ -97,16 +97,16 @@ export const addSubmittersToStudy = async (req: AddSubmittersReq) => {
 
   const successfullyAdded = await addUsersToGroup(egoGroup.id, userIds);
   if (!successfullyAdded) {
-    throw FailedToAddSubmittersToStudyGroup(req.studyId, req.emailAddresses);
+    throw FailedToAddSubmittersToStudyGroup(req.studyId, req.submitters);
   }
 
   return req;
 };
 
 export const removeSubmitterFromStudy = async (req: RemoveSubmitterReq) => {
-  const egoUser = await getEgoUser(req.email);
+  const egoUser = await getEgoUser(req.submitter);
   if (!egoUser) {
-    throw SubmitterNotFound([req.email]);
+    throw SubmitterNotFound([req.submitter]);
   }
 
   const egoGroup = await getEgoStudyGroup(req.studyId);
@@ -116,7 +116,7 @@ export const removeSubmitterFromStudy = async (req: RemoveSubmitterReq) => {
 
   const successfullyRemoved = await removeUserFromGroup(egoGroup.id, egoUser.id);
   if (!successfullyRemoved) {
-    throw FailedToRemoveSubmitterFromStudyGroup(req.studyId, req.email);
+    throw FailedToRemoveSubmitterFromStudyGroup(req.studyId, req.submitter);
   }
 
   return req;

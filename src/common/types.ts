@@ -1,9 +1,9 @@
 export type Study = {
-  studyName: string;
+  name: string;
   studyId: string;
   organization: string;
   description: string;
-  emailAddresses: string[];
+  submitters: string[];
 };
 
 export type EgoStudyGroup = {
@@ -45,16 +45,16 @@ export type EgoGetResponse<T> = {
 export type CreateStudyReq = {
   studyId: string;
   organization: string;
-  studyName: string;
+  name: string;
   description: string;
 };
 
 export type AddSubmittersReq = {
   studyId: string;
-  emailAddresses: string[];
+  submitters: string[];
 };
 
 export type RemoveSubmitterReq = {
   studyId: string;
-  email: string;
+  submitter: string;
 };

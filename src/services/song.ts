@@ -22,7 +22,7 @@ export const getSongStudies = async () => {
 export const createSongStudy = async (req: CreateStudyReq) => {
   const songCreateStudyReq = {
     description: req.description,
-    name: req.studyName,
+    name: req.name,
     organization: req.organization,
     studyId: req.studyId,
   };
