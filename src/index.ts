@@ -8,6 +8,7 @@ import {
   removeSubmitterFromStudy,
 } from './services/studies';
 import authFilter from './components/authFilter';
+import { isServiceError, ServiceError } from './common/errors';
 
 const express = require('express');
 const cors = require('cors');
@@ -50,13 +51,22 @@ app.delete('/users', authFilter, (req: Request, res: Response, next: NextFunctio
     .catch(next);
 });
 
-app.use(function (err: any, req: Request, res: Response, next: NextFunction) {
-  const { statusCode, message, stack, isServiceError } = err;
-  console.error(stack);
-  if (isServiceError) {
-    res.status(statusCode).json({ message, success: false });
+app.use(function (err: ServiceError | Error, _req: Request, res: Response, _next: NextFunction) {
+  console.error(err.stack);
+  if (isServiceError(err)) {
+    const { status, errorStudyId, errorSubmitters, reason } = err;
+    res.status(status).json({
+      success: false,
+      message: 'Error has occured!',
+      reason,
+      errorStudyId,
+      errorSubmitters,
+    });
   } else {
-    res.status(500).send('Internal Server Error');
+    res.status(500).send({
+      success: false,
+      message: 'Internal Server Error! Reason is unknown!',
+    });
   }
 });
 

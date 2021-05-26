@@ -78,7 +78,7 @@ export const createStudy = async (req: CreateStudyReq): Promise<Study | undefine
 export const addSubmittersToStudy = async (req: AddSubmittersReq) => {
   const egoGroup = await getEgoStudyGroup(req.studyId);
   if (!egoGroup) {
-    throw StudyNotFound([req.studyId]);
+    throw StudyNotFound(req.studyId);
   }
 
   const userIds = [];
@@ -111,7 +111,7 @@ export const removeSubmitterFromStudy = async (req: RemoveSubmitterReq) => {
 
   const egoGroup = await getEgoStudyGroup(req.studyId);
   if (!egoGroup) {
-    throw StudyNotFound([req.studyId]);
+    throw StudyNotFound(req.studyId);
   }
 
   const successfullyRemoved = await removeUserFromGroup(egoGroup.id, egoUser.id);
