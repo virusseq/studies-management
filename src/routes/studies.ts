@@ -24,8 +24,8 @@ router.post('/', authFilter, (req: Request, res: Response, next: NextFunction) =
     .catch(next);
 });
 
-router.post('/submitters', authFilter, async (req: Request, res: Response, next: NextFunction) => {
-  await addSubmittersToStudy(req.body)
+router.post('/submitters', authFilter, (req: Request, res: Response, next: NextFunction) => {
+  addSubmittersToStudy(req.body)
     .then((result) =>
       res.json({ success: true, message: 'User successfully added!', data: result })
     )

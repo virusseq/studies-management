@@ -29,7 +29,7 @@ export const getEgpStudyGroups = async (studyIds: string[]) => {
   const studyGroups: EgoStudyGroup[] = (
     await getWithAuth<EgoGetGroupsResponse>(EGO_GROUPS_URL).then(({ resultSet }) => resultSet)
   )
-    .filter((g) => g.name.startsWith('STUDY-'))
+    .filter((g) => g.name.startsWith(EGO_STUDY_PREFIX))
     .map((g) => {
       return {
         name: g.name,
