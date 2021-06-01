@@ -1,0 +1,271 @@
+{
+  "openapi": "3.0.0",
+  "info": {
+    "title": "Studies Service",
+    "version": "1.0.0"
+  },
+  "security": [
+    {
+      "bearerAuth": ["STUDY-${programId}.WRITE"]
+    }
+  ],
+  "paths": {
+    "/health": {
+      "get": {
+        "tags": ["Health"],
+        "summary": "get status of app",
+        "responses": {
+          "200": {
+            "description": "app is healthy",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "app is not healthy"
+          }
+        }
+      }
+    },
+    "/studies": {
+      "get": {
+        "tags": ["Studies"],
+        "summary": "Get all valid studies from song and their users from ego",
+        "responses": {
+          "200": {
+            "description": "Boolean value of whether submission system is disabled or enabled"
+          }
+        }
+      },
+      "post": {
+        "tags": ["Studies"],
+        "summary": "Create new study in song and related entities in ego",
+        "description": "Create study in song, study group in ego and study policy in ego",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreaetStudyReq"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "The new study.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Study"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/UnauthorizedError"
+          },
+          "403": {
+            "$ref": "#/components/responses/ForbiddenError"
+          },
+          "500": {
+            "$ref": "#/components/responses/ServerError"
+          }
+        }
+      }
+    },
+    "/studies/submitters": {
+      "post": {
+        "tags": ["Studies"],
+        "summary": "Add submitters to an existing study's group",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AddSubmittersReq"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "$ref": "#/components/responses/GenericSuccess"
+          },
+          "401": {
+            "$ref": "#/components/responses/UnauthorizedError"
+          },
+          "403": {
+            "$ref": "#/components/responses/ForbiddenError"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFoundError"
+          },
+          "500": {
+            "$ref": "#/components/responses/ServerError"
+          }
+        }
+      },
+      "delete": {
+        "tags": ["Studies"],
+        "summary": "Remove a submitter from a study group",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "studyId",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "submitter",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "$ref": "#/components/responses/GenericSuccess"
+          },
+          "401": {
+            "$ref": "#/components/responses/UnauthorizedError"
+          },
+          "403": {
+            "$ref": "#/components/responses/ForbiddenError"
+          },
+          "500": {
+            "$ref": "#/components/responses/ServerError"
+          }
+        }
+      }
+    }
+  },
+  "servers": [
+    {
+      "url": "/"
+    }
+  ],
+  "tags": [
+    {
+      "name": "Health",
+      "description": "Service status monitoring"
+    },
+    {
+      "name": "Studies",
+      "description": "Studies management endpoints"
+    }
+  ],
+  "components": {
+    "responses": {
+      "GenericSuccess": {
+        "description": "Endpoint finished successfully"
+      },
+      "ServiceUnavailableError": {
+        "description": "Endpoint service unavailable"
+      },
+      "UnauthorizedError": {
+        "description": "Access token is missing or invalid"
+      },
+      "ServerError": {
+        "description": "Server error"
+      },
+      "ForbiddenError": {
+        "description": "Access token has incorrect scopes"
+      },
+      "NotFoundError": {
+        "description": "Requested resource was not found"
+      }
+    },
+    "securitySchemes": {
+      "bearerAuth": {
+        "type": "http",
+        "scheme": "bearer",
+        "bearerFormat": "JWT"
+      }
+    },
+    "schemas": {
+      "CreaetStudyReq": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "studyId": {
+            "type": "string"
+          },
+          "organization": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string"
+          }
+        }
+      },
+      "AddSubmittersReq": {
+        "type": "object",
+        "properties": {
+          "studyId": {
+            "type": "string"
+          },
+          "submitters": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        }
+      },
+      "Studies": {
+        "type": "array",
+        "items": {
+          "$ref": "#/components/schemas/Study"
+        }
+      },
+      "Study": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "studyId": {
+            "type": "string"
+          },
+          "organization": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string"
+          },
+          "submitters": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        }
+      },
+      "ServiceError": {
+        "type": "object",
+        "required": ["reason"],
+        "properties": {
+          "reason": {
+            "type": "string"
+          },
+          "errorStudyId": {
+            "type": "string"
+          },
+          "errorSubmitters": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        }
+      }
+    }
+  }
+}
