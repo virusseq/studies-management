@@ -70,11 +70,21 @@ export async function getEgoUser(email: string): Promise<EgoUser | undefined> {
   return getWithAuth<EgoGetGroupUsersResponse>(url).then(({ resultSet }) => resultSet[0]);
 }
 
+export const getEgoUserGroups = (userId: string): Promise<EgoGroup[]> => {
+  const url = urljoin(EGO_URL, `/users/${userId}/groups`);
+  return getWithAuth<EgoGetGroupsResponse>(url).then(({ resultSet }) => resultSet);
+};
+
 export async function getEgoStudyGroup(studyId: string): Promise<EgoGroup | undefined> {
   const egoGroupName = studyIdToEgoGroup(studyId);
   const url = urljoin(EGO_URL, `/groups?query=${egoGroupName}`);
   return getWithAuth<EgoGetGroupsResponse>(url).then(({ resultSet }) => resultSet[0]);
 }
+
+export const getEgoStudyGroupUsers = (groupId: string): Promise<EgoUser[]> => {
+  const url = urljoin(EGO_URL, `/groups/${groupId}/users`);
+  return getWithAuth<EgoGetGroupUsersResponse>(url).then(({ resultSet }) => resultSet);
+};
 
 // return group id
 export const createEgoStudyGroup = async (studyId: string, description: string = '') => {

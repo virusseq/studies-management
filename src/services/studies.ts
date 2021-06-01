@@ -7,14 +7,16 @@ import {
   EgoStudyGroup,
 } from '../common/types';
 import {
-  FailedToRemoveSubmitterFromStudy as FailedToRemoveSubmitterFromStudyGroup,
-  FailedToCreateStudyInEgo,
-  FailedToCreateStudyInSong,
+  FailedToRemoveSubmitterFromStudy,
+  FailedToCreateStudy,
   StudyNotFound,
   SubmitterNotFound,
-  FailedToAddSubmittersToStudy as FailedToAddSubmittersToStudyGroup,
+  FailedToAddSubmittersToStudy,
+  StudyAlreadyExists,
+  SubmittersAlreadyInStudy,
+  SubmitterNotInStudy,
 } from '../common/errors';
-import { createSongStudy, getSongStudies } from './song';
+import { createSongStudy, getSongStudies, getSongStudyIds } from './song';
 import {
   getEgpStudyGroups,
   getEgoStudyUsers,
@@ -25,6 +27,8 @@ import {
   createEgoStudyGroup,
   createEgoStudyPolicy,
   addGroupToPolicyWithWriteMask,
+  getEgoStudyGroupUsers,
+  getEgoUserGroups,
 } from './ego';
 
 export const getStudies = async (): Promise<Study[]> => {
@@ -48,25 +52,34 @@ export const getStudies = async (): Promise<Study[]> => {
   );
 };
 
-export const createStudy = async (req: CreateStudyReq): Promise<Study | undefined> => {
+export const createStudy = async (req: CreateStudyReq): Promise<Study> => {
+  const existingSongIds = await getSongStudyIds();
+  if (existingSongIds.includes(req.studyId)) {
+    throw StudyAlreadyExists(req.studyId);
+  }
+
   const createdSongStudy = await createSongStudy(req);
   if (!createdSongStudy) {
-    throw FailedToCreateStudyInSong(req.studyId);
+    console.error(`Failed to create study in SONG`, JSON.stringify(req));
+    throw FailedToCreateStudy(req.studyId);
   }
 
   const groupId = await createEgoStudyGroup(req.studyId, req.description);
   if (!groupId) {
-    throw FailedToCreateStudyInEgo(req.studyId);
+    console.error(`Failed to create study group in EGO`, JSON.stringify(req));
+    throw FailedToCreateStudy(req.studyId);
   }
 
   const policyId = await createEgoStudyPolicy(req.studyId);
   if (!policyId) {
-    throw FailedToCreateStudyInEgo(req.studyId);
+    console.error(`Failed to create study policy in EGO`, JSON.stringify(req));
+    throw FailedToCreateStudy(req.studyId);
   }
 
   const added = await addGroupToPolicyWithWriteMask(groupId, policyId);
   if (!added) {
-    throw FailedToCreateStudyInEgo(req.studyId);
+    console.error(`Failed to add study group to study policy in EGO`, JSON.stringify(req));
+    throw FailedToCreateStudy(req.studyId);
   }
 
   return {
@@ -79,6 +92,14 @@ export const addSubmittersToStudy = async (req: AddSubmittersReq) => {
   const egoGroup = await getEgoStudyGroup(req.studyId);
   if (!egoGroup) {
     throw StudyNotFound(req.studyId);
+  }
+
+  const existingGroupUsers = await getEgoStudyGroupUsers(egoGroup.id);
+  if (existingGroupUsers.length > 0) {
+    throw SubmittersAlreadyInStudy(
+      req.studyId,
+      existingGroupUsers.map((u) => u.email)
+    );
   }
 
   const userIds = [];
@@ -97,26 +118,32 @@ export const addSubmittersToStudy = async (req: AddSubmittersReq) => {
 
   const successfullyAdded = await addUsersToGroup(egoGroup.id, userIds);
   if (!successfullyAdded) {
-    throw FailedToAddSubmittersToStudyGroup(req.studyId, req.submitters);
+    throw FailedToAddSubmittersToStudy(req.studyId, req.submitters);
   }
 
   return req;
 };
 
 export const removeSubmitterFromStudy = async (req: RemoveSubmitterReq) => {
-  const egoUser = await getEgoUser(req.submitter);
-  if (!egoUser) {
-    throw SubmitterNotFound([req.submitter]);
-  }
-
   const egoGroup = await getEgoStudyGroup(req.studyId);
   if (!egoGroup) {
     throw StudyNotFound(req.studyId);
   }
 
+  const egoUser = await getEgoUser(req.submitter);
+  if (!egoUser) {
+    throw SubmitterNotFound([req.submitter]);
+  }
+
+  const egoUserGroups = await getEgoUserGroups(egoUser.id);
+  const exisitngEgoGroup = egoUserGroups.find((g) => g.id === egoGroup.id);
+  if (!exisitngEgoGroup) {
+    throw SubmitterNotInStudy(req.studyId, req.submitter);
+  }
+
   const successfullyRemoved = await removeUserFromGroup(egoGroup.id, egoUser.id);
   if (!successfullyRemoved) {
-    throw FailedToRemoveSubmitterFromStudyGroup(req.studyId, req.submitter);
+    throw FailedToRemoveSubmitterFromStudy(req.studyId, req.submitter);
   }
 
   return req;

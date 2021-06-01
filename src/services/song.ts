@@ -7,9 +7,13 @@ const { get, postWithAuth } = oauthClient;
 
 const SONG_STUDIES_URL = urljoin(SONG_URL, '/studies/all');
 
-export const getSongStudies = async () => {
-  // get all studyIds and studyDetails from song
+export const getSongStudyIds = async () => {
   const studyIds: string[] = await get(SONG_STUDIES_URL);
+  return studyIds;
+};
+
+export const getSongStudies = async () => {
+  const studyIds: string[] = await getSongStudyIds();
   const studyDetails: SongStudy[] = [];
   for (const studyId of studyIds) {
     const studyDetail: SongStudy = await get(urljoin(SONG_URL, '/studies/', studyId));

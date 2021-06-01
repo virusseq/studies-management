@@ -31,14 +31,8 @@ app.use(function (
 ) {
   console.error(err.stack);
   if (err instanceof ServiceError) {
-    const { status, errorStudyId, errorSubmitters, reason } = err;
-    res.status(status).json({
-      success: false,
-      message: 'Error has occured!',
-      reason,
-      errorStudyId,
-      errorSubmitters,
-    });
+    const { status, ...errJson } = err;
+    res.status(status).json(errJson);
   } else if (err instanceof UnauthorizedError) {
     res.status(401).send({
       success: false,

@@ -34,7 +34,7 @@
     "/studies": {
       "get": {
         "tags": ["Studies"],
-        "summary": "Get current state of submission service for sample registration and clinical submission",
+        "summary": "Get all valid studies from song and their users from ego",
         "responses": {
           "200": {
             "description": "Boolean value of whether submission system is disabled or enabled"
@@ -43,8 +43,8 @@
       },
       "post": {
         "tags": ["Studies"],
-        "summary": "Run dicitonary migration to update clinical dictionary (use dry-run-update to verify migration behavior first)",
-        "description": "update and load a new schema version from lectern to be used.",
+        "summary": "Create new study in song and related entities in ego",
+        "description": "Create study in song, study group in ego and study policy in ego",
         "requestBody": {
           "content": {
             "application/json": {
@@ -56,11 +56,11 @@
         },
         "responses": {
           "200": {
-            "description": "a dictioary migration object describing the migration run",
+            "description": "The new study.",
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/Studies"
+                  "$ref": "#/components/schemas/Study"
                 }
               }
             }
@@ -80,8 +80,7 @@
     "/studies/submitters": {
       "post": {
         "tags": ["Studies"],
-        "summary": "Get active registration",
-        "description": "returns the current in progress registration for a program if any",
+        "summary": "Add submitters to an existing study's group",
         "requestBody": {
           "content": {
             "application/json": {
@@ -111,8 +110,7 @@
       },
       "delete": {
         "tags": ["Studies"],
-        "summary": "Upload registration file",
-        "description": "This will validate and save the new registration file overwriting any existing registration",
+        "summary": "Remove a submitter from a study group",
         "parameters": [
           {
             "in": "query",
