@@ -94,12 +94,11 @@ export const addSubmittersToStudy = async (req: AddSubmittersReq) => {
     throw StudyNotFound(req.studyId);
   }
 
-  const existingGroupUsers = await getEgoStudyGroupUsers(egoGroup.id);
+  const groupUsers = await getEgoStudyGroupUsers(egoGroup.id);
+  const groupUserEmails = groupUsers.map((u) => u.email);
+  const existingGroupUsers = req.submitters.filter((u) => groupUserEmails.includes(u));
   if (existingGroupUsers.length > 0) {
-    throw SubmittersAlreadyInStudy(
-      req.studyId,
-      existingGroupUsers.map((u) => u.email)
-    );
+    throw SubmittersAlreadyInStudy(req.studyId, existingGroupUsers);
   }
 
   const userIds = [];
