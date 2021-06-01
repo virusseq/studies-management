@@ -67,7 +67,10 @@ export const removeUserFromGroup = async (groupId: string, userId: string) => {
 
 export async function getEgoUser(email: string): Promise<EgoUser | undefined> {
   const url = urljoin(EGO_URL, `/users?query=${email}`);
-  return getWithAuth<EgoGetGroupUsersResponse>(url).then(({ resultSet }) => resultSet[0]);
+  return getWithAuth<EgoGetGroupUsersResponse>(url).then(({ resultSet }) =>
+    // endpoint does fuzzy search so get user with exactly the same email
+    resultSet.find((g) => g.email === email)
+  );
 }
 
 export const getEgoUserGroups = (userId: string): Promise<EgoGroup[]> => {
@@ -78,7 +81,10 @@ export const getEgoUserGroups = (userId: string): Promise<EgoGroup[]> => {
 export async function getEgoStudyGroup(studyId: string): Promise<EgoGroup | undefined> {
   const egoGroupName = studyIdToEgoGroup(studyId);
   const url = urljoin(EGO_URL, `/groups?query=${egoGroupName}`);
-  return getWithAuth<EgoGetGroupsResponse>(url).then(({ resultSet }) => resultSet[0]);
+  return getWithAuth<EgoGetGroupsResponse>(url).then(({ resultSet }) =>
+    // endpoint does fuzzy search so get group with exactly the same name
+    resultSet.find((g) => g.name === egoGroupName)
+  );
 }
 
 export const getEgoStudyGroupUsers = (groupId: string): Promise<EgoUser[]> => {
