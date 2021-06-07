@@ -1,107 +1,101 @@
-export enum ErrorReasons {
-  STUDY_NOT_FOUND = 'STUDY_NOT_FOUND',
-  SUBMITTERS_NOT_FOUND = 'SUBMITTERS_NOT_FOUND',
-  STUDY_ALREADY_EXISTS = 'STUDY_ALREADY_EXISTS',
-  SUBMITTERS_ALREADY_IN_STUDY = 'SUBMITTER_ALREADY_IN_STUDY',
-  SUBMITTER_NOT_IN_STUDY = 'SUBMITTER_NOT_IN_STUDY',
-  FAILED_TO_CREATE_STUDY = 'FAILED_TO_CREATE_STUDY',
-  FAILED_TO_REMOVE_SUBMITTER_FROM_STUDY = 'FAILED_TO_REMOVE_SUBMITTER_FROM_STUDY',
-  FAILED_TO_ADD_SUBMITTERS_TO_STUDY = 'FAILED_TO_ADD_SUBMITTERS_TO_STUDY',
-}
+import { ServiceErrorType } from './types';
 
 type ErrrorProps = {
-  status: number;
-  reason: ErrorReasons;
-  errorStudyId?: string;
-  errorSubmitters?: string[];
+  httpStatus: number;
+  type: ServiceErrorType;
+  studyId?: string;
+  submitters?: string[];
 };
 
 export class ServiceError extends Error {
   name = 'ServiceError';
   message = 'Servie error occured!';
 
-  status: number;
-  reason: ErrorReasons;
-  errorStudyId?: string;
-  errorSubmitters?: string[];
+  httpStatus: number;
+  type: ServiceErrorType;
+  studyId?: string;
+  submitters?: string[];
 
-  constructor({ status, reason, errorStudyId = '', errorSubmitters = [] }: ErrrorProps) {
+  constructor({
+    httpStatus: httpStatus,
+    type: type,
+    studyId: studyId = '',
+    submitters: submitters = [],
+  }: ErrrorProps) {
     super();
-    this.status = status;
-    this.reason = reason;
-    this.errorStudyId = errorStudyId;
-    this.errorSubmitters = errorSubmitters;
+    this.httpStatus = httpStatus;
+    this.type = type;
+    this.studyId = studyId;
+    this.submitters = submitters;
   }
 }
 
-export function StudyNotFound(errorStudyId: string): ServiceError {
-  const errorProps = { status: 404, reason: ErrorReasons.STUDY_NOT_FOUND, errorStudyId };
+export function StudyNotFound(studyId: string): ServiceError {
+  const errorProps = { httpStatus: 404, type: ServiceErrorType.STUDY_NOT_FOUND, studyId };
   return new ServiceError(errorProps);
 }
 
-export function SubmitterNotFound(errorSubmitters: string[]): ServiceError {
-  const errorProps = { status: 404, reason: ErrorReasons.SUBMITTERS_NOT_FOUND, errorSubmitters };
-  return new ServiceError(errorProps);
-}
-
-export function StudyAlreadyExists(errorStudyId: string): ServiceError {
-  const errorProps = { status: 400, reason: ErrorReasons.STUDY_ALREADY_EXISTS, errorStudyId };
-  return new ServiceError(errorProps);
-}
-
-export function SubmittersAlreadyInStudy(
-  errorStudyId: string,
-  errorSubmitters: string[]
-): ServiceError {
+export function SubmitterNotFound(submitters: string[]): ServiceError {
   const errorProps = {
-    status: 400,
-    reason: ErrorReasons.SUBMITTERS_ALREADY_IN_STUDY,
-    errorStudyId,
-    errorSubmitters,
-  };
-  return new ServiceError(errorProps);
-}
-export function SubmitterNotInStudy(errorStudyId: string, errorSubmitter: string): ServiceError {
-  const errorProps = {
-    status: 400,
-    reason: ErrorReasons.SUBMITTER_NOT_IN_STUDY,
-    errorStudyId,
-    errorSubmitters: [errorSubmitter],
+    httpStatus: 404,
+    type: ServiceErrorType.SUBMITTERS_NOT_FOUND,
+    submitters,
   };
   return new ServiceError(errorProps);
 }
 
-export function FailedToCreateStudy(errorStudyId: string): ServiceError {
+export function StudyAlreadyExists(studyId: string): ServiceError {
+  const errorProps = { httpStatus: 400, type: ServiceErrorType.STUDY_ALREADY_EXISTS, studyId };
+  return new ServiceError(errorProps);
+}
+
+export function SubmittersAlreadyInStudy(studyId: string, submitters: string[]): ServiceError {
   const errorProps = {
-    status: 500,
-    reason: ErrorReasons.FAILED_TO_CREATE_STUDY,
-    errorStudyId,
+    httpStatus: 400,
+    type: ServiceErrorType.SUBMITTERS_ALREADY_IN_STUDY,
+    studyId,
+    submitters,
+  };
+  return new ServiceError(errorProps);
+}
+export function SubmitterNotInStudy(studyId: string, errorSubmitter: string): ServiceError {
+  const errorProps = {
+    httpStatus: 400,
+    type: ServiceErrorType.SUBMITTER_NOT_IN_STUDY,
+    studyId,
+    submitters: [errorSubmitter],
+  };
+  return new ServiceError(errorProps);
+}
+
+export function FailedToCreateStudy(studyId: string): ServiceError {
+  const errorProps = {
+    httpStatus: 500,
+    type: ServiceErrorType.FAILED_TO_CREATE_STUDY,
+    studyId,
   };
   return new ServiceError(errorProps);
 }
 
 export function FailedToRemoveSubmitterFromStudy(
-  errorStudyId: string,
+  studyId: string,
   errorSubmitter: string
 ): ServiceError {
   const errorProps = {
-    status: 500,
-    reason: ErrorReasons.FAILED_TO_REMOVE_SUBMITTER_FROM_STUDY,
-    errorStudyId,
-    errorSubmitters: [errorSubmitter],
+    httpStatus: 500,
+    type: ServiceErrorType.FAILED_TO_REMOVE_SUBMITTER_FROM_STUDY,
+    studyId,
+    submitters: [errorSubmitter],
   };
   return new ServiceError(errorProps);
 }
 
-export function FailedToAddSubmittersToStudy(
-  errorStudyId: string,
-  errorSubmitters: string[]
-): ServiceError {
+export function FailedToAddSubmittersToStudy(studyId: string, submitters: string[]): ServiceError {
   const errorProps = {
-    status: 500,
-    reason: ErrorReasons.FAILED_TO_ADD_SUBMITTERS_TO_STUDY,
-    errorStudyId,
-    errorSubmitters,
+    httpStatus: 500,
+    type: ServiceErrorType.FAILED_TO_ADD_SUBMITTERS_TO_STUDY,
+    studyId,
+    submitters,
   };
   return new ServiceError(errorProps);
 }
