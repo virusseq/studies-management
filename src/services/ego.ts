@@ -11,8 +11,6 @@ import urljoin from 'url-join';
 import oauthClient from '../components/oauthClient';
 const { getWithAuth, postWithAuth, deleteWithAuth } = oauthClient;
 
-const EGO_GROUPS_URL = urljoin(EGO_URL, '/groups');
-
 function egoGroupToStudyId(egoGroupName: string) {
   return egoGroupName.replace(EGO_STUDY_PREFIX, '');
 }
@@ -25,22 +23,25 @@ function studyIdToEgoPolicy(studyId: string) {
   return EGO_STUDY_PREFIX + studyId;
 }
 
-export const getEgpStudyGroups = async (studyIds: string[]) => {
-  const studyGroups: EgoStudyGroup[] = (
-    await getWithAuth<EgoGetGroupsResponse>(EGO_GROUPS_URL).then(({ resultSet }) => resultSet)
-  )
-    .filter((g) => g.name.startsWith(EGO_STUDY_PREFIX))
-    .map((g) => {
-      return {
-        name: g.name,
-        studyId: egoGroupToStudyId(g.name),
-        id: g.id,
-        status: g.status,
+export const getEgoStudyGroups = async (studyIds: string[]) => {
+  const studyGroups: EgoStudyGroup[] = [];
+  const studyIdsMissingGroups = [];
+  for (const studyId of studyIds) {
+    const egoGroup = await getEgoStudyGroup(studyId);
+    if (!egoGroup) {
+      studyIdsMissingGroups.push(studyId);
+    } else {
+      const studyGroup = {
+        name: egoGroup.name,
+        studyId: egoGroupToStudyId(egoGroup.name),
+        id: egoGroup.id,
+        status: egoGroup.status,
       };
-    })
-    .filter((g) => studyIds.includes(egoGroupToStudyId(g.studyId)));
+      studyGroups.push(studyGroup);
+    }
+  }
 
-  return studyGroups;
+  return { studyGroups, studyIdsMissingGroups };
 };
 
 export const getEgoStudyUsers = async (studyGroups: EgoStudyGroup[]) => {

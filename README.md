@@ -12,6 +12,22 @@ Start containers:
 cd compose
 docker-compose up -d
 ```
+Config app:
+`.env`
+```
+SERVER_PORT=3001
+
+SONG_URL="http://localhost:8089"
+EGO_URL="http://localhost:8081"
+
+OAUTH_CLIENT_ID="adminId"
+OAUTH_CLIENT_SECRET="adminSecret"
+
+SCOPES_WRITE="DOMAIN.WRITE"
+
+EGO_STUDY_PREFIX=-"STUDY-"
+
+```
 
 Start app:
 

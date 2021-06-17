@@ -18,7 +18,7 @@ import {
 } from '../common/errors';
 import { createSongStudy, getSongStudies, getSongStudyIds } from './song';
 import {
-  getEgpStudyGroups,
+  getEgoStudyGroups,
   getEgoStudyUsers,
   getEgoStudyGroup,
   getEgoUser,
@@ -33,7 +33,11 @@ import {
 
 export const getStudies = async (): Promise<Study[]> => {
   const { studyIds, studyDetails } = await getSongStudies();
-  const studyGroups: EgoStudyGroup[] = await getEgpStudyGroups(studyIds);
+
+  const { studyGroups, studyIdsMissingGroups } = await getEgoStudyGroups(studyIds);
+  console.error("These SONG study IDs don't have ego groups: ", studyIdsMissingGroups);
+  console.debug(studyGroups);
+
   const studyUsers: Record<string, string[]> = await getEgoStudyUsers(studyGroups);
 
   return (
