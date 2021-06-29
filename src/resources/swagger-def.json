@@ -60,7 +60,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/Study"
+                  "$ref": "#/components/schemas/CreateStudyRes"
                 }
               }
             }
@@ -92,7 +92,14 @@
         },
         "responses": {
           "200": {
-            "$ref": "#/components/responses/GenericSuccess"
+            "description": "The new study.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AddSubmittersRes"
+                }
+              }
+            }
           },
           "401": {
             "$ref": "#/components/responses/UnauthorizedError"
@@ -129,7 +136,14 @@
         ],
         "responses": {
           "200": {
-            "$ref": "#/components/responses/GenericSuccess"
+            "description": "The new study.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RemoveSubmitterRes"
+                }
+              }
+            }
           },
           "401": {
             "$ref": "#/components/responses/UnauthorizedError"
@@ -248,20 +262,75 @@
           }
         }
       },
-      "ServiceError": {
+      "CreateStudyRes": {
         "type": "object",
-        "required": ["reason"],
         "properties": {
-          "reason": {
+          "success": {
+            "type": "boolean"
+          },
+          "message": {
             "type": "string"
           },
-          "errorStudyId": {
+          "data": {
+            "$ref": "#/components/schemas/Study"
+          }
+        }
+      },
+      "AddSubmittersRes": {
+        "type": "object",
+        "properties": {
+          "studyId": {
             "type": "string"
           },
-          "errorSubmitters": {
+          "submitters": {
             "type": "array",
             "items": {
               "type": "string"
+            }
+          }
+        }
+      },
+      "RemoveSubmitterRes": {
+        "type": "object",
+        "properties": {
+          "studyId": {
+            "type": "string"
+          },
+          "submitter": {
+            "type": "string"
+          }
+        }
+      },
+      "ServiceError": {
+        "type": "object",
+        "required": ["success", "error"],
+        "properties": {
+          "success": {
+            "type": "boolean"
+          },
+          "error": {
+            "type": "object",
+            "required": ["type"],
+            "properties": {
+              "message": {
+                "type": "string"
+              },
+              "type": {
+                "type": "string",
+                "enum": [
+                  "STUDY_NOT_FOUND",
+                  "SUBMITTERS_NOT_FOUND",
+                  "STUDY_ALREADY_EXISTS",
+                  "SUBMITTERS_ALREADY_IN_STUDY",
+                  "SUBMITTER_NOT_IN_STUDY",
+                  "FAILED_TO_CREATE_STUDY",
+                  "FAILED_TO_REMOVE_SUBMITTER_FROM_STUDY",
+                  "FAILED_TO_ADD_SUBMITTERS_TO_STUDY",
+                  "UNAUTHORIZED",
+                  "FORBIDDEN",
+                  "UNKNOWN"
+                ]
+              }
             }
           }
         }
