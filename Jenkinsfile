@@ -1,13 +1,9 @@
-def dockerRepo = "ghcr.io/cancogen-virus-seq/studies-service"
-def githubRepo = "cancogen-virus-seq/studies-service"
-def commit = "UNKNOWN"
-def version = "UNKNOWN"
+def dockerRepo = 'ghcr.io/cancogen-virus-seq/studies-service'
+def githubRepo = 'cancogen-virus-seq/studies-service'
+def commit = 'UNKNOWN'
+def version = 'UNKNOWN'
 
-pipeline {
-    agent {
-        kubernetes {
-            label 'studies-service-executor'
-            yaml """
+String podSpec = '''
 apiVersion: v1
 kind: Pod
 spec:
@@ -46,33 +42,39 @@ spec:
   volumes:
   - name: dind-storage
     emptyDir: {}
-"""
-        }
+'''
+
+pipeline {
+  agent {
+    kubernetes {
+      label 'studies-service-executor'
+      yaml podSpec
     }
-    stages {
-        stage('Prepare') {
-            steps {
-                script {
-                    commit = sh(returnStdout: true, script: 'git describe --always').trim()
-                }
-                script {
-                    version = sh(returnStdout: true, script: 'cat ./package.json | grep version | cut -d \':\' -f2 | sed -e \'s/"//\' -e \'s/",//\'').trim()
-                }
-            }
+  }
+  stages {
+    stage('Prepare') {
+      steps {
+        script {
+          commit = sh(returnStdout: true, script: 'git describe --always').trim()
         }
+        script {
+          version = sh(returnStdout: true, script: 'cat ./package.json | grep version | cut -d \':\' -f2 | sed -e \'s/"//\' -e \'s/",//\'').trim()
+        }
+      }
+    }
 
     stage('Build') {
       steps {
         container('node') {
-          sh "npm ci"
-          sh "npm run build"
+          sh 'npm ci'
+          sh 'npm run build'
         }
       }
     }
 
     stage('Build & Publish Development Changes') {
       when {
-      branch 'develop'
+        branch 'develop'
       }
       steps {
         container('docker') {
@@ -86,24 +88,9 @@ spec:
       }
     }
 
-    stage('deploy to cancogen-virus-seq-dev') {
-      when {
-        branch "develop"
-      }
-      steps {
-        build(job: "virusseq/update-app-version", parameters: [
-          [$class: 'StringParameterValue', name: 'CANCOGEN_ENV', value: 'dev' ],
-          [$class: 'StringParameterValue', name: 'TARGET_RELEASE', value: 'studies-service'],
-          [$class: 'StringParameterValue', name: 'NEW_APP_VERSION', value: "${commit}" ]
-        ])
-      }
-    }
-
     stage('Release & Tag') {
       when {
-        anyOf {
-          branch 'main'
-        }
+        branch 'main'
       }
       steps {
         container('docker') {
@@ -111,12 +98,35 @@ spec:
             sh "git tag ${version}"
             sh "git push https://${GIT_USERNAME}:${GIT_PASSWORD}@github.com/${githubRepo} --tags"
           }
+
           withCredentials([usernamePassword(credentialsId:'argoContainers', usernameVariable: 'USERNAME', passwordVariable: 'PASSWORD')]) {
             sh 'docker login ghcr.io -u $USERNAME -p $PASSWORD'
           }
           sh "docker build --network=host -f Dockerfile . -t ${dockerRepo}:${version} -t ${dockerRepo}:latest"
           sh "docker push ${dockerRepo}:${version}"
           sh "docker push ${dockerRepo}:latest"
+        }
+      }
+    }
+
+    stage('deploy to cancogen-virus-seq-dev') {
+      when {
+        anyOf {
+          branch 'develop'
+        }
+      }
+      steps {
+        script {
+          // we don't want the build to be tagged as failed because it could not be deployed.
+          try {
+            build(job: 'virusseq/update-app-version', parameters: [
+              [$class: 'StringParameterValue', name: 'CANCOGEN_ENV', value: 'dev' ],
+              [$class: 'StringParameterValue', name: 'TARGET_RELEASE', value: 'studies-service'],
+              [$class: 'StringParameterValue', name: 'NEW_APP_VERSION', value: "${commit}" ]
+            ])
+          } catch (err) {
+            echo 'The app built successfully, but could not be deployed'
+          }
         }
       }
     }
