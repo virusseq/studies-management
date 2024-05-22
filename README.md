@@ -1,4 +1,4 @@
-# studies-service
+# studies-management
 
 Simple app that batches requests to song+ego to fetch and create studies along with related autho entities (ego groups and policies). This app also batches requests to ego add users to a study group.
 
